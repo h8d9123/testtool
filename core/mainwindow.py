@@ -7,6 +7,8 @@ class MainWindow(QtGui.QMainWindow):
         super(MainWindow, self).__init__(parent)
         self.setupUi()
     def setupUi(self):
+        
+        #设置中部显示区
         self.createMenu()
         self.centralWidget = QtGui.QFrame(self)
         self.centralWidget.setFrameStyle(QtGui.QFrame.Box|QtGui.QFrame.Raised)
@@ -15,6 +17,31 @@ class MainWindow(QtGui.QMainWindow):
         self.setCentralWidget(self.centralWidget)
         self.mplwidget = mplcanvas.MplCanvas()
         vbox.addWidget(self.mplwidget)
+        
+        #创建下部的显示区
+        self.dockWidgetDown = QtGui.QDockWidget(self)
+        frame1 = QtGui.QFrame(self.dockWidgetDown)
+        frame1.setFrameStyle(QtGui.QFrame.Box|QtGui.QFrame.Raised)
+        frame1.setLineWidth(1)
+        self.dockWidgetDown.setWidget(frame1)
+        hbox_state = QtGui.QHBoxLayout(frame1)
+        self.stateDialog = QtGui.QDialog()
+        hbox_state.addWidget(self.stateDialog)
+        self.dockWidgetDown.setFeatures(QtGui.QDockWidget.NoDockWidgetFeatures)
+        self.addDockWidget(QtCore.Qt.DockWidgetArea(QtCore.Qt.BottomDockWidgetArea), self.dockWidgetDown)
+        
+        #创建右部的设置区域
+        self.dockWidgetRight = QtGui.QDockWidget(self)
+        frame1 = QtGui.QFrame(self.dockWidgetRight)
+        frame1.setFrameStyle(QtGui.QFrame.Box|QtGui.QFrame.Raised)
+        frame1.setLineWidth(1)
+        self.dockWidgetRight.setWidget(frame1)
+        hbox_control = QtGui.QHBoxLayout(frame1)
+        self.controlDialog = QtGui.QDialog()
+        hbox_control.addWidget(self.controlDialog)
+        self.dockWidgetDown.setFeatures(QtGui.QDockWidget.NoDockWidgetFeatures)
+        self.addDockWidget(QtCore.Qt.DockWidgetArea(QtCore.Qt.RightDockWidgetArea), self.dockWidgetRight)
+        
         pass
     def createMenu(self):
         self.createAction()
