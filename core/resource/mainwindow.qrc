@@ -1,0 +1,18 @@
+<RCC>
+  <qresource>
+    <file>images/check.png</file>
+    <file>images/start.ico</file>
+    <file>images/pause.png</file>
+    <file>images/notpass.ico</file>
+    <file>images/pass.ico</file>
+    <file>images/HMCLogo.jpg</file>
+    <file>images/disconnect.png</file>
+    <file>images/connect.png</file>
+    <file>images/open.png</file>
+    <file>images/save.png</file>
+    <file>images/previous.png</file>
+    <file>images/next.png</file>
+    <file>images/restart.jpg</file>
+    <file>images/scanner.png</file>
+  </qresource>
+</RCC>
