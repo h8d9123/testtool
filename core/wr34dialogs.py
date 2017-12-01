@@ -70,7 +70,7 @@ class QWR34SaveDialog(QtGui.QWidget):
         self.btn_chooseDir.clicked.connect(self.onBtnChooseClicked)
         self.btn_saveS2p.clicked.connect(self.onBtnSaveClicked)
     def onBtnSaveClicked(self):
-        self.connector = self.parent().connector if self.parent() else None
+        self.connector = self.parent().getConnector() if self.parent() else None
         if self.connector==None:
             self.showError(self.NOCONNECTINSTRUMENT)
             return
@@ -116,7 +116,7 @@ class QWR34SaveDialog(QtGui.QWidget):
         msg[self.NOCONNECTINSTRUMENT]='"please connect instrument"'
         QtGui.QMessageBox.information(self, "Tips", msg[errNum])
         
-class QWR34PlotDialog(QtGui.QWidget):
+class QWR34PlotDialog(QtGui.QDialog):
     NOCHOOSEDIRECTORY = 0
     DIRECTORYNOTVALID = 1
     S2PFILENOTEXIST = 2
