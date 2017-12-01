@@ -2,8 +2,10 @@
 import os, sys
 from PyQt4 import QtGui,QtCore,Qt
 from PyQt4.QtCore import QString
-class QWR34Dialog(QtGui.QWidget):
+import logging
+class QWR34SaveDialog(QtGui.QWidget):
     NOCHOOSEDIRECTORY = 0
+    NOCONNECTINSTRUMENT = 1
     def __init__(self, parent = None):
         super(self.__class__, self).__init__(parent)
         self.chanelCount = 8
@@ -11,6 +13,7 @@ class QWR34Dialog(QtGui.QWidget):
         self.temparatures=[ '-20', '25', '60']
         self.setupUI()
     def setupUI(self):
+        self.setWindowTitle('WR34')
         hbox_dirName = QtGui.QHBoxLayout()
         hbox_dirName.addWidget(QtGui.QLabel("S2p Dir:"))
         self.le_dirName = QtGui.QLineEdit('')
@@ -63,6 +66,11 @@ class QWR34Dialog(QtGui.QWidget):
         self.btn_chooseDir.clicked.connect(self.onBtnChooseClicked)
         self.btn_saveS2p.clicked.connect(self.onBtnSaveClicked)
     def onBtnSaveClicked(self):
+        self.connector = self.parent().connector if self.parent() else None
+        if self.connector==None:
+            self.showError(self.NOCONNECTINSTRUMENT)
+            return
+        
         dirName = str(self.le_dirName.text())
         if len(dirName)=='0':
             self.showError(self.NOCHOOSEDIRECTORY)
@@ -70,8 +78,19 @@ class QWR34Dialog(QtGui.QWidget):
         self.onRadioBtnChanelClicked()
         s2pName = self.le_s2pName
         s2pPath = os.path.join(dirName,s2pName)
-        #save file 
-        #todo
+        
+    
+        if s2pName in os.listdir(self.template_dir):
+            flag = QtGui.QMessageBox.question(None, "?", "overwrite %s"%s2pName, buttons = QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
+            if flag != QtGui.QMessageBox.Yes:
+                return
+        tmpfile = self.connector.recvs2p()
+        if tmpfile is None:
+            return
+        with open(s2pPath,'w') as fid:
+            fid.write(tmpfile)
+            fid.close()
+            logging.info('the %s was stored'%(s2pName))
 
     def onBtnChooseClicked(self):
         workdir = str(QtGui.QFileDialog.getExistingDirectory(parent=None, caption=QString("Choose a directory saving S2ps")))
@@ -90,13 +109,14 @@ class QWR34Dialog(QtGui.QWidget):
     def showError(self, errNum):
         msg={}
         msg[self.NOCHOOSEDIRECTORY]="please choose a directory firstly"
+        msg[self.NOCONNECTINSTRUMENT]='"please connect instrument"'
         QtGui.QMessageBox.information(self, "Tips", msg[errNum])
         
             
 
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
-    dlg = QWR34Dialog()
+    dlg = QWR34SaveDialog()
     dlg.show()
     sys.exit(app.exec_())
     pass
