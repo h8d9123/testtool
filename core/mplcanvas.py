@@ -34,6 +34,8 @@ class MplCanvas(FigureCanvas):
                                    QtGui.QSizePolicy.Expanding)
 
         FigureCanvas.updateGeometry(self)
+        self.toolbar = NavigationToolbar(self,self)
+        self.toolbar.hide()
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.createPopMenu()
 
