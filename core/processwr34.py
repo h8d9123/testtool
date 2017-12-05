@@ -1,7 +1,10 @@
 #-*-coding:utf-8-*-
+from PyQt4 import QtGui,QtCore,Qt
 import openpyxl as pyxl
 import numpy as np
 import os
+
+CHANNEL_COUNT = 8
 CHANNEL_1 = 3
 IL = 0
 ILVAR = 1
@@ -19,7 +22,7 @@ COLT1   =   3
 COLT2   =   4
 COLT3   =   5
 COLPASSORFAIL = 6
-from PyQt4 import QtGui,QtCore,Qt
+
 def parseSpecStr(spec):
     '''
     Desp:解析指标,判断大于小于，以及指标，忽略单位
@@ -46,10 +49,9 @@ def parseSpecStr(spec):
     return v
     
 
-
 class WR34Filter(object):
     def __init__(self,stdExcellName,sheetName=None):
-        self.chanelCount = 8    #通道个数
+        self.chanelCount = CHANNEL_COUNT    #通道个数
         self.rowStep = 11       #每个通道对应的数据行数
         self.stdExcelName = stdExcellName   #指标模板-->output_wr34.xlsx
         self.wb = pyxl.load_workbook(self.stdExcelName)
@@ -130,15 +132,46 @@ class WR34Filter(object):
                 ws[row_excel][COLPASSORFAIL].value = 'PASS' if np.min(vec)>=self.specLim[chanel - 1, idxName] and np.min(vec)!=-1 else 'FAIL'
         pass
 
+def getInputFrequency(excelName):
+    def parseStr(s):
+        endIdx = 0
+        for i in range(0,len(s)):
+            if s[i].isdigit() or str([i]) == '.':
+                continue
+            else:
+                endIdx = i
+                break
+        if len(s[0:endIdx])==0:
+            return 0
+        
+        #默认MHz钻转为Hz
+        v = float(str(s[0:endIdx]))*10**3
+        return v
+    wb = pyxl.load_workbook(excelName)
+    ws = wb.active
+    vec_cf_bw = np.zeros(shape = (CHANNEL_COUNT, 2))
+    starRow = 2
+    for r in range(CHANNEL_COUNT):
+        v1 = ws[r + starRow][2].value
+        vec_cf_bw[r,0] =parseStr(v1)
+        v2 = ws[r+starRow][3].value
+        vec_cf_bw[r,1] = parseStr(v2)
+    print vec_cf_bw
+    return vec_cf_bw
+        
+        
+        
 if __name__ == '__main__':
     import sys
     app = QtGui.QApplication(sys.argv)
     stdExcel = r'..\db\output_WR34.xlsx'
     tarExcel = r'..\qa\outputDir\out1.xlsx'
+    inputExcel = r'..\db\input_WR34.xlsx'
     wr34 = WR34Filter(stdExcel)
     specs = np.zeros(11);
     ch = 2
     colT =COLT1
-    wr34.writeSpecToExcel(tarExcel, ch, colT, specs)
+    #wr34.writeSpecToExcel(tarExcel, ch, colT, specs)
+    vecs = getInputFrequency(inputExcel)
     sys.exit(app.exec_())
     pass
