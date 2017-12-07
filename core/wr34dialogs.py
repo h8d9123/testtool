@@ -3,7 +3,8 @@ import os, sys
 from PyQt4 import QtGui,QtCore,Qt
 from PyQt4.QtCore import QString
 import logging
-
+import processs2p
+import numpy as np
 def formatS2pName(chanel, temparature):
     return 'T_%s_%s.s2p'%(temparature,chanel)
 
@@ -25,7 +26,7 @@ class QWR34SaveDialog(QtGui.QWidget):
         hbox_dirName.addWidget(self.le_dirName)
         hbox_dirName.addWidget(self.btn_chooseDir)
         #choose chanel
-        rb_chanels = [QtGui.QRadioButton('ch%s'%(i+1)) for i in range(self.chanelCount)]
+        rb_chanels = [QtGui.QRadioButton('ch_%s'%(i+1)) for i in range(self.chanelCount)]
         grid_chanels = QtGui.QGridLayout()
         self.btngroup_chanel = QtGui.QButtonGroup()
         for i in range(self.chanelCount):
@@ -127,10 +128,20 @@ class QWR34PlotDialog(QtGui.QDialog):
         self.snnName = ['S11','S21','S12','S22']
         self.temparatures=[ '-20', '25', '60']
         self.snnColor = ['black','blue','green','red']
-        self.linemarker = ['.','-','--']
+        self.linemarker = ['-.','-','--']
         self.lineType = ['S', 'Group delay']
         self.dirName = None
         self.setupUI()
+        isDebug = True
+        self.cf_bw = False
+        self.selectedTemparatures = None
+        self.selectedChanels = None
+        isDebug=True
+        if isDebug:
+            self.qadir=os.path.abspath(r'..\qa\WR34NewFltnew')
+        else:
+            self.qadir = '.'
+            
     def setupUI(self):
         self.setWindowTitle('WR34')
         hbox_dirName = QtGui.QHBoxLayout()
@@ -140,7 +151,7 @@ class QWR34PlotDialog(QtGui.QDialog):
         hbox_dirName.addWidget(self.le_dirName)
         hbox_dirName.addWidget(self.btn_chooseDir)
         #choose chanel
-        cb_chanels = [QtGui.QCheckBox('ch%s'%(i+1)) for i in range(self.chanelCount)]
+        cb_chanels = [QtGui.QCheckBox('ch_%s'%(i+1)) for i in range(self.chanelCount)]
         grid_chanels = QtGui.QGridLayout()
         self.btngroup_chanel = QtGui.QButtonGroup()
         self.btngroup_chanel.setExclusive(False)
@@ -201,29 +212,34 @@ class QWR34PlotDialog(QtGui.QDialog):
         
         
         self.connectInit()#binds signal and callback functions
-        self.onCheckBtnChanelClicked()
+        #self.onCheckBtnChanelClicked()
     def connectInit(self):
         self.btn_chooseDir.clicked.connect(self.onBtnChooseClicked)
         
     
 
     def onBtnChooseClicked(self):
-        workdir = str(QtGui.QFileDialog.getExistingDirectory(parent=None, caption=QString("Choose a directory saving S2ps")))
+        workdir = str(QtGui.QFileDialog.getExistingDirectory(parent=None, 
+                                                             caption=QString("Choose a directory saving S2ps"),
+                                                             directory = self.qadir))
         if len(workdir) != 0:
             self.le_dirName.setText(workdir)
             
     def onCheckBtnChanelClicked(self):
         self.selectedChanels = [str(btn.text()) for btn in self.btngroup_chanel.buttons() if btn.isChecked()]
+        self.mydraw()
         
     def onCheckBtnSnnClicked(self):
         self.selectedSnn = [str(btn.text()) for btn in self.btngroup_snn.buttons() if btn.isChecked()]
+        self.mydraw()
         
     def onCheckBtnTemparatureClicked(self):
         self.selectedTemparatures = [str(btn.text()) for btn in self.btngroup_temparature.buttons() if btn.isChecked()]
+        self.mydraw()
         
     def onRadioBtnLineTypeClicked(self):
         self.ltype = str(self.btngroup_lineType.checkedButton().text())
-        pass
+        self.mydraw()
         
     def showError(self, errNum):
         msg={}
@@ -233,36 +249,62 @@ class QWR34PlotDialog(QtGui.QDialog):
         QtGui.QMessageBox.information(self, "Tips", msg[errNum])
 
     def mydraw(self):
-        self.axes = self.parent().getAxes() if self.parent() else None
-        if not self.axes: return
+        if self.parent() is None:
+            return
+        self.axes = self.parent().getMplCanvas().axes if self.parent() else None
+        self.updatedata()
+        self.cf_bw = self.parent().getCFBW()
+        if not self.axes: 
+            
+            return
         self.axes.clear()
+        
         fNames = []
         self.workdir = str(self.le_dirName.text())
         if not os.path.exists(self.workdir):
             self.showError(self.DIRECTORYNOTVALID)
+            return
+     
         for ch in self.selectedChanels:
             for t in self.selectedTemparatures:
-                fNames.append(os.path.join(self.dirName, formatS2pName(self.workdir, t)))
+                fNames.append(os.path.join(self.workdir, formatS2pName(ch, t)))
                 if not os.path.exists(fNames[-1]):
+                    print fNames[-1]
                     self.showError(self.S2PFILENOTEXIST)
                     return
+      
         for fname in fNames:
             for snn in self.selectedSnn:
                 idx = self.selectedSnn.index(snn)+1
                 #range should be given
                 if self.ltype == 'S':
-                    self.plotS(self.axes,idx)
+                    self.plotS(self.axes,idx,fname)
                 if self.ltype == 'Group delay':
-                    self.plotGroupDelay(self.axes, idx)
+                    self.plotGroupDelay(self.axes, idx, fname)
                 self.axes.hold(True)
+        self.parent().getMplCanvas().draw()
                     
-    def plotS(self, axes, idx):
+    def plotS(self, axes, idx, fname):
+        print fname
+        idxMarker = 0
+        for i in range(len(self.temparatures)):
+            if self.temparatures[i] in fname:
+                idxMarker = i
+        s2p = processs2p.ReadS2p(fname)
+        freq = np.real(s2p[:, 0])
+        print idx
+        axes.plot(freq, 20*np.log10(np.abs(s2p[:,idx])),color=self.snnColor[idx-1],
+                  linestyle=self.linemarker[idxMarker])
         pass
     
-    def plotGroupDelay(self,axes, idx):
+    def plotGroupDelay(self,axes, idx, fname):
         pass
-            
-
+    
+    def updatedata(self):
+        self.selectedChanels = [str(btn.text()) for btn in self.btngroup_chanel.buttons() if btn.isChecked()]
+        self.selectedSnn = [str(btn.text()) for btn in self.btngroup_snn.buttons() if btn.isChecked()]
+        self.selectedTemparatures = [str(btn.text()) for btn in self.btngroup_temparature.buttons() if btn.isChecked()]
+        self.ltype = str(self.btngroup_lineType.checkedButton().text())
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
     dlg = QWR34PlotDialog()

@@ -6,10 +6,12 @@ import wr34dialogs
 import connectdialog
 import logging
 from resource import icon_rc,icons
+import processwr34
 class MainWindow(QtGui.QMainWindow):
     def __init__(self,parent = None):
         super(MainWindow, self).__init__(parent)
         self.connector = None
+        self.cf_bw = None
         self.setupUi()
         self.connectInit()
     def setupUi(self):
@@ -122,8 +124,15 @@ class MainWindow(QtGui.QMainWindow):
         self.panAct.triggered.connect(toolbar.pan)
         self.lineAct.triggered.connect(toolbar.edit_parameters)
     def onActOpenTriggered(self):
-        pass
-    
+        inputdir = r'.\db'
+        if not os.path.exists(os.path.abspath(inputdir)):
+            inputdir = '..\db'
+        excelName = str(QtGui.QFileDialog.getOpenFileName(None, caption='Open',directory = inputdir, filter='excel(*.xlsx)'))
+        if len(excelName) != 0:
+            self.cf_bw = processwr34.getInputFrequency(excelName)
+    def getCFBW(self):
+        if self.cf_bw != None:
+            return self.cf_bw
     def onActSaveTriggered(self):
         pass
     
@@ -132,8 +141,8 @@ class MainWindow(QtGui.QMainWindow):
         dlg.show()
         dlg.exec_()
         
-    def getAxes(self):
-        return self.mplwidget.axes
+    def getMplCanvas(self):
+        return self.mplwidget
     
     def getConnector(self):
         return self.connector
