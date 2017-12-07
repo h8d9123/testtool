@@ -86,7 +86,7 @@ class WR34Filter(object):
                 spec = self.ws[row_excel][COLSPEC].value
                 v = parseSpecStr(spec)
                 self.specLim[ch, r] = v
-        print self.specLim
+        #print self.specLim
     def writeSpecToExcel(self, targetExcel, chanel,colTemperature, specs):
         wb = None
         ws = None
@@ -158,8 +158,9 @@ def getInputFrequency(excelName):
         vec_cf_bw[r,1] = parseStr(v2)
         v3 = ws[r+starRow][4].value
         vec_cf_bw[r,2] = parseStr(v3)
-    print vec_cf_bw
+    #print vec_cf_bw
     return vec_cf_bw
+
 def getchAndJIndex(excelName):
     wb = pyxl.load_workbook(excelName)
     ws = wb.active

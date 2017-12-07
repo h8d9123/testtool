@@ -5,15 +5,35 @@ from PyQt4.QtCore import QString
 import logging
 import processs2p
 import numpy as np
+import specwr34
+import processwr34
+
+NOCHOOSEDIRECTORY = 0
+NOCONNECTINSTRUMENT = 1
+S2PFILENOTEXIST = 2
+NOINPUTEXCEL = 3
+DIRECTORYNOTVALID = 4
+msg={}
+msg[NOCHOOSEDIRECTORY]="please choose a directory firstly"
+msg[DIRECTORYNOTVALID]="please choose a directory firstly"
+msg[NOCONNECTINSTRUMENT]='"please connect instrument"'
+msg[S2PFILENOTEXIST] = "s2p file does not exist!"
+msg[NOINPUTEXCEL] = "please click file/open"
 def formatS2pName(chanel, temparature):
     return 'T_%s_%s.s2p'%(temparature,chanel)
-
+def parseS2pName(s2pName):
+    tmpdict = {'-20':processwr34.COLT1,
+                '25':processwr34.COLT2,
+                '60':processwr34.COLT3}
+    fname = os.path.splitext(os.path.basename(s2pName))[0]
+    v = fname.split('_')
+    return tmpdict[v[1]],int(v[3])
+ 
 class QWR34SaveDialog(QtGui.QWidget):
-    NOCHOOSEDIRECTORY = 0
-    NOCONNECTINSTRUMENT = 1
     def __init__(self, parent = None):
         super(self.__class__, self).__init__(parent)
         self.chanelCount = 8
+        self.parentHandle = None
         self.temparatureCount = 3
         self.temparatures=[ '-20', '25', '60']
         self.setupUI()
@@ -50,19 +70,23 @@ class QWR34SaveDialog(QtGui.QWidget):
         rb_temparature[1].setChecked(True)
         gbox_temparature = QtGui.QGroupBox()
         gbox_temparature.setLayout(hbox_temparature)
+        hbox_s2pName = QtGui.QHBoxLayout()
+        hbox_s2pName.addWidget(QtGui.QLabel("S2p Name:"))
+        self.le_s2pName = QtGui.QLineEdit('')
+        hbox_s2pName.addWidget(self.le_s2pName)
         
         hbox_saveS2p = QtGui.QHBoxLayout()
-        hbox_saveS2p.addWidget(QtGui.QLabel("S2p Name:"))
-        self.le_s2pName = QtGui.QLineEdit('')
         self.btn_saveS2p = QtGui.QPushButton("Save")
-        hbox_saveS2p.addWidget(self.le_s2pName)
+        self.btn_showSpec = QtGui.QPushButton('Show')
         hbox_saveS2p.addWidget(self.btn_saveS2p)
+        hbox_saveS2p.addWidget(self.btn_showSpec)
         
         
         vbox = QtGui.QVBoxLayout(self)
         vbox.addLayout(hbox_dirName)
         vbox.addWidget(gbox_chanels)
         vbox.addWidget(gbox_temparature)
+        vbox.addLayout(hbox_s2pName)
         vbox.addLayout(hbox_saveS2p)
         
         self.connectInit()#binds signal and callback functions
@@ -70,15 +94,31 @@ class QWR34SaveDialog(QtGui.QWidget):
     def connectInit(self):
         self.btn_chooseDir.clicked.connect(self.onBtnChooseClicked)
         self.btn_saveS2p.clicked.connect(self.onBtnSaveClicked)
+        self.btn_showSpec.clicked.connect(self.onBtnShowSpecClicked)
+    def onBtnShowSpecClicked(self):
+        if self.parentHandle is None:
+            return
+        ch = str(self.btngroup_chanel.checkedButton().text())
+        t = str(self.btngroup_temparature.checkedButton().text())
+        s2pname = formatS2pName(ch,t)
+        self.workdir = str(self.le_dirName.text())
+        fname = os.path.join(self.workdir, s2pname)
+        if not os.path.exists(fname):
+            self.showError(S2PFILENOTEXIST)
+            return
+        self.calSpecs(fname)
+        pass
     def onBtnSaveClicked(self):
-        self.connector = self.parent().getConnector() if self.parent() else None
+        if self.parentHandle is None:
+            return
+        self.connector = self.parentHandle.getConnector()
         if self.connector==None:
-            self.showError(self.NOCONNECTINSTRUMENT)
+            self.showError(NOCONNECTINSTRUMENT)
             return
         
         dirName = str(self.le_dirName.text())
         if len(dirName)=='0':
-            self.showError(self.NOCHOOSEDIRECTORY)
+            self.showError(NOCHOOSEDIRECTORY)
             return
         self.onRadioBtnChanelClicked()
         s2pName = self.le_s2pName
@@ -96,7 +136,6 @@ class QWR34SaveDialog(QtGui.QWidget):
             fid.write(tmpfile)
             fid.close()
             logging.info('the %s was stored'%(s2pName))
-
     def onBtnChooseClicked(self):
         workdir = str(QtGui.QFileDialog.getExistingDirectory(parent=None, caption=QString("Choose a directory saving S2ps")))
         if len(workdir) != 0:
@@ -112,15 +151,40 @@ class QWR34SaveDialog(QtGui.QWidget):
         self.onRadioBtnChanelClicked()
         
     def showError(self, errNum):
-        msg={}
-        msg[self.NOCHOOSEDIRECTORY]="please choose a directory firstly"
-        msg[self.NOCONNECTINSTRUMENT]='"please connect instrument"'
         QtGui.QMessageBox.information(self, "Tips", msg[errNum])
+    def calSpecs(self,s2pName):
+        if self.parentHandle is None:
+            return
+        self.cf_bw = self.parentHandle.getCFBW()
+        self.ch_J = self.parentHandle.getCHAndJIndex()
+        if self.cf_bw is None or self.ch_J is None:
+            self.showError(NOINPUTEXCEL)
+            return
+        excelName = '.\db\output_WR34.xlsx'
+        if not os.path.exists(excelName):
+            excelName = '..\db\output_WR34.xlsx'
+        wr34 = processwr34.WR34Filter(excelName)
+        
+        dirname = str(self.le_dirName.text())
+        if len(dirname)==0:
+            self.showError(NOCHOOSEDIRECTORY)
+            return
+        colT, jx = parseS2pName(s2pName)
+        chanel = self.ch_J.index(jx)+1
+        savename = os.path.join(dirname,'result.xlsx')
+        BW0, BW1 = self.cf_bw[chanel-1,1],self.cf_bw[chanel-1, 2]
+        specs = specwr34.getitems(chanel, BW0, BW1, s2pName)
+        wr34.writeSpecToExcel(savename, chanel, colT, specs)
+        
+        specwnd = self.parentHandle.getHandleShowSpec()
+        specwnd.clear()
+        specwnd.append(s2pName)
+        specwnd.append('%s'%specs)
+        specwnd.append('\n')
+        
+
         
 class QWR34PlotDialog(QtGui.QDialog):
-    NOCHOOSEDIRECTORY = 0
-    DIRECTORYNOTVALID = 1
-    S2PFILENOTEXIST = 2
     def __init__(self, parent = None):
         super(self.__class__, self).__init__(parent)
         self.chanelCount = 8
@@ -218,6 +282,7 @@ class QWR34PlotDialog(QtGui.QDialog):
         
     
     def onBtnChooseClicked(self):
+        
         workdir = str(QtGui.QFileDialog.getExistingDirectory(parent=None, 
                                                              caption=QString("Choose a directory saving S2ps"),
                                                              directory = self.qadir))
@@ -241,10 +306,6 @@ class QWR34PlotDialog(QtGui.QDialog):
         self.mydraw()
         
     def showError(self, errNum):
-        msg={}
-        msg[self.NOCHOOSEDIRECTORY]="please choose a directory firstly."
-        msg[self.DIRECTORYNOTVALID] = "directory is not valid!"
-        msg[self.S2PFILENOTEXIST] = "s2p file does not exist!"
         QtGui.QMessageBox.information(self, "Tips", msg[errNum])
 
     def mydraw(self):
@@ -254,6 +315,8 @@ class QWR34PlotDialog(QtGui.QDialog):
         self.updatedata()
         self.cf_bw = self.parent().getCFBW()
         self.ch_J = self.parent().getCHAndJIndex()
+        if self.cf_bw is None:
+            self.showError(NOINPUTEXCEL)
         if not self.axes: 
             
             return
@@ -262,15 +325,14 @@ class QWR34PlotDialog(QtGui.QDialog):
         fNames = []
         self.workdir = str(self.le_dirName.text())
         if not os.path.exists(self.workdir):
-            self.showError(self.DIRECTORYNOTVALID)
+            self.showError(DIRECTORYNOTVALID)
             return
      
         for ch in self.selectedChanels:
             for t in self.selectedTemparatures:
                 fNames.append(os.path.join(self.workdir, formatS2pName(ch, t)))
                 if not os.path.exists(fNames[-1]):
-                    print fNames[-1]
-                    self.showError(self.S2PFILENOTEXIST)
+                    self.showError(S2PFILENOTEXIST)
                     return
         tmp = ['S11','S21','S12','S22']
         
@@ -278,13 +340,13 @@ class QWR34PlotDialog(QtGui.QDialog):
             for snn in self.selectedSnn:
                 
                 idx = tmp.index(snn)+1
-                print snn,idx,self.selectedSnn
                 #range should be given
                 if self.ltype == 'S':
                     self.plotS(self.axes,idx,fname)
                 if self.ltype == 'Group delay':
                     self.plotGroupDelay(self.axes, idx, fname)
                 self.axes.hold(True)
+                #self.calSpecs(fname)
         self.parent().getMplCanvas().draw()
                     
     def plotS(self, axes, idx, fname):
@@ -320,7 +382,7 @@ class QWR34PlotDialog(QtGui.QDialog):
         idxlow = int(((self.cf_bw[ch, 0] - self.cf_bw[ch, 1]/2.0) - freq[0])/(freq[1]-freq[0]))
         idxhigh = int(((self.cf_bw[ch, 0] + self.cf_bw[ch, 1]/2.0) - freq[0])/(freq[1]-freq[0]))
         
-        print len(freq_delay)
+        
         GD=delay
         for kter in range(len(GD)-2):
             if kter==1:
@@ -337,9 +399,12 @@ class QWR34PlotDialog(QtGui.QDialog):
         self.selectedSnn = [str(btn.text()) for btn in self.btngroup_snn.buttons() if btn.isChecked()]
         self.selectedTemparatures = [str(btn.text()) for btn in self.btngroup_temparature.buttons() if btn.isChecked()]
         self.ltype = str(self.btngroup_lineType.checkedButton().text())
+    
+    
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
-    dlg = QWR34PlotDialog()
+    dlg = QWR34SaveDialog()
     dlg.show()
     sys.exit(app.exec_())
+    
     pass

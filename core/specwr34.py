@@ -17,7 +17,9 @@ from scipy import interpolate
 import copy
 import processs2p
 
-def getitems(iter, BW0, BW1, path):
+def getitems(chanel, BW0, BW1, path):
+    #iter === chanel
+    iter = chanel -1
     f0 = [27725*10**6,27975*10**6,28225*10**6,28475*10**6,28725*10**6,28975*10**6,29625*10**6,29875*10**6]
     S2p = processs2p.ReadS2p(path)   
     fre = S2p[:,0]
@@ -66,11 +68,7 @@ def getitems(iter, BW0, BW1, path):
                 GD[kter]=GD[kter+1]
         else:
             if np.abs(GD[kter])>np.abs((GD[kter-1]+GD[kter+1])*10):
-                GD[kter]=(GD[kter-1]+GD[kter+1])/2
-    print(idxl0,idxu0)
-    print len(GD)     
-    plt.plot(GD)
-    plt.show()            
+                GD[kter]=(GD[kter-1]+GD[kter+1])/2.0
     GDrip = max(GD) - min(GD)   
     GDripR = max(np.diff(GD)/step*10**6) 
     
@@ -115,9 +113,11 @@ def getitems(iter, BW0, BW1, path):
         Rjav = (Rjav1+Rjav2)/2 - Lamav
         
     
-    return [abs(Lamav),Lrip,np.real(LripR),GDrip1,np.real(GDripR1),GDrip,np.real(GDripR),abs(Rjav),abs(RL),abs(CPRL)] 
+    result = [abs(Lamav),0,Lrip,np.real(LripR),GDrip1,np.real(GDripR1),GDrip,np.real(GDripR),abs(Rjav),abs(RL),abs(CPRL)] 
+    return np.round(result, 3)
 if __name__ == "__main__":
-    M = getitems(0, 230*10**6, 216*10**6,r'..\qa\WR34NewFltnew\T_-20_J_8.s2p')
+    M = getitems(1, 230*10**6, 216*10**6,r'..\qa\WR34NewFltnew\T_25_J_8.s2p')
+    print M
     print np.round(M,2)
   
     

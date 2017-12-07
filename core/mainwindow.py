@@ -16,6 +16,8 @@ class MainWindow(QtGui.QMainWindow):
         self.ch_J = None
         self.setupUi()
         self.connectInit()
+        #self.controlDialog.setParent(self)
+        self.controlDialog.parentHandle = self
     def setupUi(self):
         
         #设置中部显示区
@@ -169,7 +171,9 @@ class MainWindow(QtGui.QMainWindow):
             self.connector.close()
             logging.info('disconnected the instrument')
     
-    
+    def getHandleShowSpec(self):
+        return self.specWnd
+        
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
     dlg = MainWindow()
