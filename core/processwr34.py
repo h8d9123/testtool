@@ -145,19 +145,31 @@ def getInputFrequency(excelName):
             return 0
         
         #Ä¬ÈÏMHz×ê×ªÎªHz
-        v = float(str(s[0:endIdx]))*10**3
+        v = float(str(s[0:endIdx]))*10**6
         return v
     wb = pyxl.load_workbook(excelName)
     ws = wb.active
-    vec_cf_bw = np.zeros(shape = (CHANNEL_COUNT, 2))
+    vec_cf_bw = np.zeros(shape = (CHANNEL_COUNT, 3))
     starRow = 2
     for r in range(CHANNEL_COUNT):
         v1 = ws[r + starRow][2].value
         vec_cf_bw[r,0] =parseStr(v1)
         v2 = ws[r+starRow][3].value
         vec_cf_bw[r,1] = parseStr(v2)
+        v3 = ws[r+starRow][4].value
+        vec_cf_bw[r,2] = parseStr(v3)
     print vec_cf_bw
     return vec_cf_bw
+def getchAndJIndex(excelName):
+    wb = pyxl.load_workbook(excelName)
+    ws = wb.active
+    vec_cf_bw = np.zeros(shape = (CHANNEL_COUNT, 2))
+    starRow = 2
+    v=[1 for i in range(CHANNEL_COUNT)]
+    for r in range(CHANNEL_COUNT):
+        v1 = ws[r + starRow][1].value
+        v[r]=int(v1[1:])
+    return v
         
         
         
@@ -173,5 +185,7 @@ if __name__ == '__main__':
     colT =COLT1
     #wr34.writeSpecToExcel(tarExcel, ch, colT, specs)
     vecs = getInputFrequency(inputExcel)
+    vv = getchAndJIndex(inputExcel)
+    print vv.index(8)
     sys.exit(app.exec_())
     pass

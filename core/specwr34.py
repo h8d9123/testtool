@@ -66,8 +66,11 @@ def getitems(iter, BW0, BW1, path):
                 GD[kter]=GD[kter+1]
         else:
             if np.abs(GD[kter])>np.abs((GD[kter-1]+GD[kter+1])*10):
-                GD[kter]=(GD[kter-1]+GD[kter+1])/2     
-                
+                GD[kter]=(GD[kter-1]+GD[kter+1])/2
+    print(idxl0,idxu0)
+    print len(GD)     
+    plt.plot(GD)
+    plt.show()            
     GDrip = max(GD) - min(GD)   
     GDripR = max(np.diff(GD)/step*10**6) 
     
@@ -114,8 +117,7 @@ def getitems(iter, BW0, BW1, path):
     
     return [abs(Lamav),Lrip,np.real(LripR),GDrip1,np.real(GDripR1),GDrip,np.real(GDripR),abs(Rjav),abs(RL),abs(CPRL)] 
 if __name__ == "__main__":
-    
-    M = getitems(0, 230*10**6, 216*10**6,r'..\qa\WR34NewFltnew\T_-20_ch_8.s2p')
+    M = getitems(0, 230*10**6, 216*10**6,r'..\qa\WR34NewFltnew\T_-20_J_8.s2p')
     print np.round(M,2)
   
     

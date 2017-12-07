@@ -7,11 +7,13 @@ import connectdialog
 import logging
 from resource import icon_rc,icons
 import processwr34
+
 class MainWindow(QtGui.QMainWindow):
     def __init__(self,parent = None):
         super(MainWindow, self).__init__(parent)
         self.connector = None
         self.cf_bw = None
+        self.ch_J = None
         self.setupUi()
         self.connectInit()
     def setupUi(self):
@@ -130,9 +132,13 @@ class MainWindow(QtGui.QMainWindow):
         excelName = str(QtGui.QFileDialog.getOpenFileName(None, caption='Open',directory = inputdir, filter='excel(*.xlsx)'))
         if len(excelName) != 0:
             self.cf_bw = processwr34.getInputFrequency(excelName)
+            self.ch_J = processwr34.getchAndJIndex(excelName)
     def getCFBW(self):
         if self.cf_bw != None:
             return self.cf_bw
+    def getCHAndJIndex(self):
+        if self.ch_J is not None:
+            return self.ch_J
     def onActSaveTriggered(self):
         pass
     

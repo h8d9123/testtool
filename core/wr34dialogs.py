@@ -26,7 +26,7 @@ class QWR34SaveDialog(QtGui.QWidget):
         hbox_dirName.addWidget(self.le_dirName)
         hbox_dirName.addWidget(self.btn_chooseDir)
         #choose chanel
-        rb_chanels = [QtGui.QRadioButton('ch_%s'%(i+1)) for i in range(self.chanelCount)]
+        rb_chanels = [QtGui.QRadioButton('J_%s'%(i+1)) for i in range(self.chanelCount)]
         grid_chanels = QtGui.QGridLayout()
         self.btngroup_chanel = QtGui.QButtonGroup()
         for i in range(self.chanelCount):
@@ -151,7 +151,7 @@ class QWR34PlotDialog(QtGui.QDialog):
         hbox_dirName.addWidget(self.le_dirName)
         hbox_dirName.addWidget(self.btn_chooseDir)
         #choose chanel
-        cb_chanels = [QtGui.QCheckBox('ch_%s'%(i+1)) for i in range(self.chanelCount)]
+        cb_chanels = [QtGui.QCheckBox('J_%s'%(i+1)) for i in range(self.chanelCount)]
         grid_chanels = QtGui.QGridLayout()
         self.btngroup_chanel = QtGui.QButtonGroup()
         self.btngroup_chanel.setExclusive(False)
@@ -217,7 +217,6 @@ class QWR34PlotDialog(QtGui.QDialog):
         self.btn_chooseDir.clicked.connect(self.onBtnChooseClicked)
         
     
-
     def onBtnChooseClicked(self):
         workdir = str(QtGui.QFileDialog.getExistingDirectory(parent=None, 
                                                              caption=QString("Choose a directory saving S2ps"),
@@ -254,6 +253,7 @@ class QWR34PlotDialog(QtGui.QDialog):
         self.axes = self.parent().getMplCanvas().axes if self.parent() else None
         self.updatedata()
         self.cf_bw = self.parent().getCFBW()
+        self.ch_J = self.parent().getCHAndJIndex()
         if not self.axes: 
             
             return
@@ -272,10 +272,13 @@ class QWR34PlotDialog(QtGui.QDialog):
                     print fNames[-1]
                     self.showError(self.S2PFILENOTEXIST)
                     return
-      
+        tmp = ['S11','S21','S12','S22']
+        
         for fname in fNames:
             for snn in self.selectedSnn:
-                idx = self.selectedSnn.index(snn)+1
+                
+                idx = tmp.index(snn)+1
+                print snn,idx,self.selectedSnn
                 #range should be given
                 if self.ltype == 'S':
                     self.plotS(self.axes,idx,fname)
@@ -285,20 +288,49 @@ class QWR34PlotDialog(QtGui.QDialog):
         self.parent().getMplCanvas().draw()
                     
     def plotS(self, axes, idx, fname):
-        print fname
         idxMarker = 0
         for i in range(len(self.temparatures)):
             if self.temparatures[i] in fname:
                 idxMarker = i
         s2p = processs2p.ReadS2p(fname)
         freq = np.real(s2p[:, 0])
-        print idx
         axes.plot(freq, 20*np.log10(np.abs(s2p[:,idx])),color=self.snnColor[idx-1],
                   linestyle=self.linemarker[idxMarker])
         pass
     
     def plotGroupDelay(self,axes, idx, fname):
-        pass
+        idxMarker = 0
+        for i in range(len(self.temparatures)):
+            if self.temparatures[i] in fname:
+                idxMarker = i
+        chname = ['J_%s'%(i+1) for i in range(self.chanelCount)]
+        ch = 0
+        for i, it in enumerate(chname):
+            if it in fname:
+                ch = i
+            
+        s2p = processs2p.ReadS2p(fname)
+        freq = np.real(s2p[:, 0])
+        
+        idxArg = self.ch_J
+        ch = idxArg.index(ch+1)
+        p = np.angle(s2p[:, idx])
+        delay = -np.diff(p)/(freq[1]-freq[0])
+        freq_delay = freq[:-1]
+        idxlow = int(((self.cf_bw[ch, 0] - self.cf_bw[ch, 1]/2.0) - freq[0])/(freq[1]-freq[0]))
+        idxhigh = int(((self.cf_bw[ch, 0] + self.cf_bw[ch, 1]/2.0) - freq[0])/(freq[1]-freq[0]))
+        
+        print len(freq_delay)
+        GD=delay
+        for kter in range(len(GD)-2):
+            if kter==1:
+                if np.abs(GD[kter])>np.abs(GD[kter+1]*10):
+                    GD[kter]=GD[kter+1]
+            else:
+                if np.abs(GD[kter])>np.abs((GD[kter-1]+GD[kter+1])*10):
+                    GD[kter]=(GD[kter-1]+GD[kter+1])/2
+        axes.plot(freq_delay[idxlow:idxhigh], GD[idxlow:idxhigh],color=self.snnColor[idx-1],
+                  linestyle=self.linemarker[idxMarker])
     
     def updatedata(self):
         self.selectedChanels = [str(btn.text()) for btn in self.btngroup_chanel.buttons() if btn.isChecked()]
