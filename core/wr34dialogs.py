@@ -121,11 +121,11 @@ class QWR34SaveDialog(QtGui.QWidget):
             self.showError(NOCHOOSEDIRECTORY)
             return
         self.onRadioBtnChanelClicked()
-        s2pName = self.le_s2pName
+        s2pName = str(self.le_s2pName.text())
         s2pPath = os.path.join(dirName,s2pName)
         
     
-        if s2pName in os.listdir(self.template_dir):
+        if s2pName in os.listdir(dirName):
             flag = QtGui.QMessageBox.question(None, "?", "overwrite %s"%s2pName, buttons = QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
             if flag != QtGui.QMessageBox.Yes:
                 return
@@ -136,6 +136,7 @@ class QWR34SaveDialog(QtGui.QWidget):
             fid.write(tmpfile)
             fid.close()
             logging.info('the %s was stored'%(s2pName))
+
     def onBtnChooseClicked(self):
         workdir = str(QtGui.QFileDialog.getExistingDirectory(parent=None, caption=QString("Choose a directory saving S2ps")))
         if len(workdir) != 0:
@@ -200,7 +201,7 @@ class QWR34PlotDialog(QtGui.QDialog):
         self.cf_bw = False
         self.selectedTemparatures = None
         self.selectedChanels = None
-        isDebug=True
+        isDebug=False
         if isDebug:
             self.qadir=os.path.abspath(r'..\qa\WR34NewFltnew')
         else:
