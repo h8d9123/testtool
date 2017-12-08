@@ -64,7 +64,7 @@ class WR34Filter(object):
             else:
                 self.ws = self.active
         #每一个通道需要写入的指标位置， 即对应的行坐标
-        self.specName = [IL, ILVAR,ILRIP,ILRIPR,GDRIP1,GDRIPR1,GDRIP2,GDRIPR2,RJ,RL]
+        self.specName = [IL,ILRIP,ILRIPR,GDRIP1,GDRIPR1,GDRIP2,GDRIPR2,RJ,RL,CPRL]
         #温度对应的列
         self.colTemparaturs = [COLT1, COLT2, COLT3]
         #记录每个通道的各个指标，矩阵大小： 通道数 x 每个通道数据的个数
@@ -103,6 +103,17 @@ class WR34Filter(object):
             #第 chanel 个通道， 每一个通道的数据行数为 rowstep, 起始行CHANEL_1, r:每个通道的第r个数据项
             row_excel = (chanel-1)*self.rowStep + CHANNEL_1 + idxName
             ws[row_excel][colTemperature].value = specs[idxName]
+        vec =[]
+        row_excel = (chanel-1)*self.rowStep + CHANNEL_1
+        for col in self.colTemparaturs:
+            tmp = ws[row_excel][col].value
+            if tmp!='' and tmp is not None:
+                print [tmp]
+                vec.append(float(tmp))
+            else:
+                vec.append(0)
+        ws[row_excel + 1][self.colTemparaturs[0]].value = np.max(vec) - np.min(vec)
+        
         
         #判断当前通道的数据是否达标
         self.checkPassOrFail(ws, chanel)
@@ -130,6 +141,15 @@ class WR34Filter(object):
                 ws[row_excel][COLPASSORFAIL].value = 'PASS' if np.max(vec)<=self.specLim[chanel - 1, idxName] and np.min(vec)!=-1 else 'FAIL'
             else:
                 ws[row_excel][COLPASSORFAIL].value = 'PASS' if np.min(vec)>=self.specLim[chanel - 1, idxName] and np.min(vec)!=-1 else 'FAIL'
+        row_excel = (chanel-1)*self.rowStep + CHANNEL_1
+        t = ws[row_excel + 1][self.colTemparaturs[0]].value
+        if t!='' and t!=None:
+            if float(t) <=self.specLim[chanel -1, ILVAR]:
+                ws[row_excel+1][COLPASSORFAIL].value = 'PASS'
+            else:
+                ws[row_excel+1][COLPASSORFAIL].value = 'Fail'
+        else:
+            ws[row_excel+1][COLPASSORFAIL].value = 'Fail'
         pass
 
 def getInputFrequency(excelName):
