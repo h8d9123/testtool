@@ -67,12 +67,12 @@ class SCPIConnector(object):
     def send(self, command):
         if self.isCreated:
             if self.type=='TCPIP':
-                self.vna.send("*OPC?\n")
-                status = self.vna.recv(1024)
+#                 self.vna.send("*OPC?\n")
+                #status = self.vna.recv(1024)
                 #print [status]
-                if status!='+1\n':
-                    #logging.info("the vna is busy!,vna status number:%s"%status)
-                    pass
+#                 if status!='+1\n':
+#                     #logging.info("the vna is busy!,vna status number:%s"%status)
+#                     pass
                 cmd = '%s\n'%command
                 self.vna.send(cmd)
                 logging.debug('sending %s to instrument'%cmd)
