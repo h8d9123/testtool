@@ -81,7 +81,8 @@ class MplCanvas(FigureCanvas):
                     self.show_popmenu)
 
     def show_popmenu(self, pos):
-        self.popmenu.popup(self.mapToGlobal(pos))
+        #self.popmenu.popup(self.mapToGlobal(pos))
+        pass
 
     def getSnn(self):
         snn =self.snn_ac_group.checkedAction().text()
