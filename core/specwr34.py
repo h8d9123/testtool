@@ -71,7 +71,6 @@ def getitems(chanel, BW0, BW1, path):
                 GD[kter]=(GD[kter-1]+GD[kter+1])/2.0
     GDrip = max(GD) - min(GD)   
     GDripR = max(np.diff(GD)/step*10**6) 
-    
     fbu01 = f0[iter] + BW1/2.0
     fbl01 = f0[iter] - BW1/2.0
     idxu01 = round((fbu01 - fbl0)/step + 1)
