@@ -7,6 +7,7 @@ import connectdialog
 import logging
 from resource import icon_rc,icons
 import processwr34
+import logginginfomation
 
 class MainWindow(QtGui.QMainWindow):
     def __init__(self,parent = None):
@@ -18,6 +19,8 @@ class MainWindow(QtGui.QMainWindow):
         self.connectInit()
         #self.controlDialog.setParent(self)
         self.controlDialog.parentHandle = self
+        logging.info("********************")
+        logging.info("Welcome to the new world!~~~" )
     def setupUi(self):
         
         #设置中部显示区
@@ -40,6 +43,8 @@ class MainWindow(QtGui.QMainWindow):
         vbox_state = QtGui.QVBoxLayout(frame1)
         self.tabWnd = QtGui.QTabWidget()
         self.specWnd = QtGui.QTextEdit()
+        self.consoleWnd = logginginfomation.StateDialog(self.dockWidgetDown)
+        self.tabWnd.addTab(self.consoleWnd,"Log console")
         self.tabWnd.addTab(self.specWnd, "Spec")
         vbox_state.addWidget(self.tabWnd)
         
@@ -73,7 +78,7 @@ class MainWindow(QtGui.QMainWindow):
         acts = [self.actPlot]
         for act in acts:
             self.toolMenu.addAction(act)
-        acts = [self.homeAct,self.backAct, self.upAct, self.downAct, self.nextAct, self.zoomInAct, 
+        acts = [self.homeAct,self.backAct,self.nextAct, self.zoomInAct, 
                 self.zoomOutAct,self.lineAct,self.savePicAct, self.panAct]
         for act in acts:
             self.graphMenu.addAction(act)
@@ -111,7 +116,7 @@ class MainWindow(QtGui.QMainWindow):
         acts = [self.actPlot]
         for act in acts:
             toolBar.addAction(act)
-        acts = [self.homeAct,self.backAct, self.upAct, self.downAct, self.nextAct, self.zoomInAct, 
+        acts = [self.homeAct,self.backAct, self.nextAct, self.zoomInAct, 
                 self.zoomOutAct,self.lineAct,self.savePicAct, self.panAct]
         for act in acts:
             graphBar.addAction(act)
@@ -122,6 +127,8 @@ class MainWindow(QtGui.QMainWindow):
         self.zoomInAct.triggered.connect(toolbar.zoom)
         self.backAct.triggered.connect(toolbar.back)
         self.nextAct.triggered.connect(toolbar.forward)
+       
+        #self.upAct.Trigger.connect(toolbar.move)
         self.homeAct.triggered.connect(toolbar.home)
         self.borderAct.triggered.connect(toolbar.configure_subplots)
         self.savePicAct.triggered.connect(toolbar.save_figure)
