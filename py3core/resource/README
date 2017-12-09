@@ -1,5 +1,0 @@
-After updateing images, run
-
-pyrcc4 -o icon_rc.py mainwindow.qrc
-
-to get the new icon_rc.py file
