@@ -1,0 +1,16 @@
+1生成可执行文件
+	在core/目录下执行：pyinstaller mainwindow.spec
+	
+	ps:目前在wind10 下打包不能在win7下运行：
+	原因：
+		1.可能winx86 和 winx64的影响
+		2.可能向下不能兼容
+2.包装成安装程序
+	工具：innosetup
+	在innosetup里面执行 wr34toolbuild.iss
+	ps:需要修改wr34toolbuild里面的目录：改成合适目录即可
+		[Files]
+		Source: "H:\app\testTool\core\dist\ver_1\WR34Tool.exe"; DestDir: "{app}"; Flags: ignoreversion
+		Source: "H:\app\testTool\core\dist\ver_1\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+		
+		
