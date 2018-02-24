@@ -17,10 +17,11 @@ from scipy import interpolate
 import copy
 import processs2p
 
-def getitems(chanel, BW0, BW1, path):
+def getitems(chanel, cfs, BW0, BW1, path):
     #iter === chanel
     iter = chanel -1
-    f0 = [27725*10**6,27975*10**6,28225*10**6,28475*10**6,28725*10**6,28975*10**6,29625*10**6,29875*10**6]
+    #f0 = [27725*10**6,27975*10**6,28225*10**6,28475*10**6,28725*10**6,28975*10**6,29625*10**6,29875*10**6]
+    f0 = cfs
     S2p = processs2p.ReadS2p(path)   
     fre = S2p[:,0]
     S21 = S2p[:,2]
@@ -29,8 +30,8 @@ def getitems(chanel, BW0, BW1, path):
     for i in range(len(S21)):
         Lam[i] = 20*np.log10(abs(S21[i]))  
     
-    f1 = S2p[0][0]
-    fu = S2p[len(S2p)-1][0] 
+    f1 = np.real(S2p[0][0])
+    fu = np.real(S2p[len(S2p)-1][0])
     step = np.real(S2p[1][0] - S2p[0][0])
     fbu0 = f0[iter] + BW0/2.0
     fbl0 = f0[iter] - BW0/2.0
@@ -83,8 +84,8 @@ def getitems(chanel, BW0, BW1, path):
     
     
     if iter != 0:
-        fbu01=f0[iter-1]+BW0/2
-        fbl01=f0[iter-1]-BW0/2
+        fbu01=f0[iter-1]+BW0/2.0
+        fbl01=f0[iter-1]-BW0/2.0
         idxu01=round((fbu01-f1)/step+1)
         idxl01=round((fbl01-f1)/step+1)
         
@@ -115,7 +116,10 @@ def getitems(chanel, BW0, BW1, path):
     result = [abs(Lamav),0,Lrip,np.real(LripR),GDrip1,np.real(GDripR1),GDrip,np.real(GDripR),abs(Rjav),abs(RL),abs(CPRL)] 
     return np.round(result, 3)
 if __name__ == "__main__":
-    M = getitems(1, 230*10**6, 216*10**6,r'..\qa\WR34NewFltnew\T_25_J_8.s2p')
+    import processwr34
+    cfs_bw = processwr34.getInputFrequency(r'..\db\input_WR34.xlsx')
+    M = getitems(1, cfs_bw[:, 0], cfs_bw[0, 2], cfs_bw[0, 3],r'..\qa\WR34NewFltnew\T_60_J_8.s2p')
+    M = getitems(1, cfs_bw[:, 0], 230*10**6, 216*10**6,r'..\qa\WR34NewFltnew\T_60_J_8.s2p')
     print M
     print np.round(M,2)
   

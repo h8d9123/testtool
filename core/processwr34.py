@@ -108,7 +108,7 @@ class WR34Filter(object):
         for col in self.colTemparaturs:
             tmp = ws[row_excel][col].value
             if tmp!='' and tmp is not None:
-                print [tmp]
+                #print [tmp]
                 vec.append(float(tmp))
             else:
                 vec.append(0)
@@ -156,7 +156,7 @@ def getInputFrequency(excelName):
     def parseStr(s):
         endIdx = 0
         for i in range(0,len(s)):
-            if s[i].isdigit() or str([i]) == '.':
+            if s[i].isdigit() or str(s[i]) == '.':
                 continue
             else:
                 endIdx = i
@@ -169,7 +169,7 @@ def getInputFrequency(excelName):
         return v
     wb = pyxl.load_workbook(excelName)
     ws = wb.active
-    vec_cf_bw = np.zeros(shape = (CHANNEL_COUNT, 3))
+    vec_cf_bw = np.zeros(shape = (CHANNEL_COUNT, 4))
     starRow = 2
     for r in range(CHANNEL_COUNT):
         v1 = ws[r + starRow][2].value
@@ -178,6 +178,7 @@ def getInputFrequency(excelName):
         vec_cf_bw[r,1] = parseStr(v2)
         v3 = ws[r+starRow][4].value
         vec_cf_bw[r,2] = parseStr(v3)
+        vec_cf_bw[r,3] = parseStr(ws[r+starRow][5].value)
     #print vec_cf_bw
     return vec_cf_bw
 

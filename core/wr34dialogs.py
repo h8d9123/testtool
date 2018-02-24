@@ -173,8 +173,9 @@ class QWR34SaveDialog(QtGui.QWidget):
         colT, jx = parseS2pName(s2pName)
         chanel = self.ch_J.index(jx)+1
         savename = os.path.join(dirname,'result.xlsx')
-        BW0, BW1 = self.cf_bw[chanel-1,1],self.cf_bw[chanel-1, 2]
-        specs = specwr34.getitems(chanel, BW0, BW1, s2pName)
+        BW0, BW1 = self.cf_bw[chanel-1,2],self.cf_bw[chanel-1, 3]
+       
+        specs = specwr34.getitems(chanel, self.cf_bw[:, 0], BW0, BW1, s2pName)
         wr34.writeSpecToExcel(savename, chanel, colT, specs)
         
         specwnd = self.parentHandle.getHandleShowSpec()
@@ -205,7 +206,10 @@ class QWR34PlotDialog(QtGui.QDialog):
         if isDebug:
             self.qadir=os.path.abspath(r'..\qa\WR34NewFltnew')
         else:
-            self.qadir = '.'
+            self.qadir = '.' if not os.path.exists(r'.\qa') else os.path.abspath(r'.\qa')
+            if os.path.exists(r'..\qa\WR34NewFltnew'):
+                self.qadir = os.path.abspath(r'..\qa\WR34NewFltnew')
+       
             
     def setupUI(self):
         self.setWindowTitle('WR34')
@@ -357,8 +361,11 @@ class QWR34PlotDialog(QtGui.QDialog):
                 idxMarker = i
         s2p = processs2p.ReadS2p(fname)
         freq = np.real(s2p[:, 0])
-        axes.plot(freq, 20*np.log10(np.abs(s2p[:,idx])),color=self.snnColor[idx-1],
+        axes.plot(freq/1e9, 20*np.log10(np.abs(s2p[:,idx])),color=self.snnColor[idx-1],
                   linestyle=self.linemarker[idxMarker])
+        axes.set_xlabel('Frequency(GHz)')
+        axes.set_ylabel('Sparameter(dB)')
+        axes.set_ybound(None,0)
         pass
     
     def plotGroupDelay(self,axes, idx, fname):
@@ -378,7 +385,7 @@ class QWR34PlotDialog(QtGui.QDialog):
         idxArg = self.ch_J
         ch = idxArg.index(ch+1)
         p = np.angle(s2p[:, idx])
-        delay = -np.diff(p)/(freq[1]-freq[0])
+        delay = -np.diff(p)/(freq[1]-freq[0])/2.0/np.pi*1e9
         freq_delay = freq[:-1]
         idxlow = int(((self.cf_bw[ch, 0] - self.cf_bw[ch, 1]/2.0) - freq[0])/(freq[1]-freq[0]))
         idxhigh = int(((self.cf_bw[ch, 0] + self.cf_bw[ch, 1]/2.0) - freq[0])/(freq[1]-freq[0]))
@@ -392,8 +399,11 @@ class QWR34PlotDialog(QtGui.QDialog):
             else:
                 if np.abs(GD[kter])>np.abs((GD[kter-1]+GD[kter+1])*10):
                     GD[kter]=(GD[kter-1]+GD[kter+1])/2
-        axes.plot(freq_delay[idxlow:idxhigh], GD[idxlow:idxhigh],color=self.snnColor[idx-1],
+        axes.plot(freq_delay[idxlow:idxhigh]/1e9, GD[idxlow:idxhigh],color=self.snnColor[idx-1],
                   linestyle=self.linemarker[idxMarker])
+        axes.set_ybound(lower=0)
+        axes.set_xlabel('Frequency(GHz)')
+        axes.set_ylabel('Group Delay(ns)')
     
     def updatedata(self):
         self.selectedChanels = [str(btn.text()) for btn in self.btngroup_chanel.buttons() if btn.isChecked()]
